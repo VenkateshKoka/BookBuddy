@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Star } from "lucide-react";
 import { Sparkles as SparkleEffect } from "@/components/ui/sparkle";
+import { ShareButton } from "@/components/ui/share-button";
 
 interface BookCardProps {
   book: Book & { 
@@ -38,6 +39,13 @@ export default function BookCard({ book }: BookCardProps) {
             )}
           </div>
         )}
+        <div className="absolute top-2 left-2 z-20">
+          <ShareButton
+            title={book.title}
+            author={book.author}
+            description={book.description}
+          />
+        </div>
       </CardHeader>
       <CardContent className="pt-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{book.title}</h3>
