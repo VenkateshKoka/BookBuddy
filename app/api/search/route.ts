@@ -5,23 +5,48 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const { query, type } = await request.json();
+    const body = await request.json();
+    console.log("Search request received:", body);
 
-    const results = type === "quote"
-      ? await searchBooksByQuote(query)
-      : await searchBooksByDescription(query);
+    if (!body.query) {
+      return NextResponse.json(
+        { error: "Search query is required" },
+        { status: 400 }
+      );
+    }
+
+    // Extract query from request body and determine search type from URL
+    const query = body.query.trim();
+    const type = request.url.endsWith("/quote") ? "quote" : "description";
+    console.log(`Performing ${type} search for: "${query}"`);
+
+    let results;
+    try {
+      results = type === "quote"
+        ? await searchBooksByQuote(query)
+        : await searchBooksByDescription(query);
+      console.log(`Search returned ${results.length} results`);
+    } catch (searchError) {
+      console.error("Search failed:", searchError);
+      throw searchError;
+    }
 
     // Log the search in history
-    await db.insert(searchHistory).values({
-      query,
-      searchType: type,
-    });
+    try {
+      await db.insert(searchHistory).values({
+        query,
+        searchType: type,
+      });
+    } catch (dbError) {
+      console.error("Failed to log search history:", dbError);
+      // Don't throw here, as the search itself succeeded
+    }
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error("Search error:", error);
+    console.error("Search endpoint error:", error);
     return NextResponse.json(
-      { error: "Failed to search books" },
+      { error: error instanceof Error ? error.message : "Failed to search books" },
       { status: 500 }
     );
   }

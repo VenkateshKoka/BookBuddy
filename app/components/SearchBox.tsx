@@ -20,12 +20,13 @@ interface SearchBoxProps {
 }
 
 export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
-  const [searchType, setSearchType] = useState("description");
+  const [searchType, setSearchType] = useState<"description" | "quote">("description");
   const [query, setQuery] = useState("");
   const { toast } = useToast();
 
   const handleSearch = async () => {
-    if (!query.trim()) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
       toast({
         title: "Please enter a search query",
         variant: "destructive",
@@ -35,26 +36,28 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
 
     onSearchStart();
     try {
-      const endpoint = `/api/search/${searchType}`;
-      const response = await fetch(endpoint, {
+      console.log(`Starting ${searchType} search for: "${trimmedQuery}"`);
+
+      const response = await fetch(`/api/search/${searchType}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: trimmedQuery }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Search failed");
+        throw new Error(data.error || "Search failed");
       }
 
-      const results = await response.json();
-      onSearch(results);
+      console.log(`Search returned ${data.length} results`);
+      onSearch(data);
     } catch (error) {
       console.error("Search error:", error);
       toast({
-        title: "Error",
+        title: "Search failed",
         description: error instanceof Error ? error.message : "Failed to search books. Please try again.",
         variant: "destructive",
       });
@@ -67,7 +70,7 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
       <div className="flex gap-4">
         <Select
           value={searchType}
-          onValueChange={setSearchType}
+          onValueChange={(value: "description" | "quote") => setSearchType(value)}
         >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Search type" />
