@@ -77,13 +77,13 @@ export default function Home() {
               {aiRecommendations.length > 0 && (
                 <BookCarousel 
                   books={aiRecommendations} 
-                  title="AI-Powered Recommendations" 
+                  title={`${aiRecommendations.length} AI-Powered ${aiRecommendations.length === 1 ? 'Recommendation' : 'Recommendations'}`}
                 />
               )}
               {regularBooks.length > 0 && (
                 <BookCarousel 
                   books={regularBooks} 
-                  title="Book Matches" 
+                  title={`${regularBooks.length} Book ${regularBooks.length === 1 ? 'Match' : 'Matches'}`}
                 />
               )}
               {searchResults.length === 0 && !isLoading && (
