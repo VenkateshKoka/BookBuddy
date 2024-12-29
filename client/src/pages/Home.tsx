@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import SearchBar from "@/components/SearchBar";
 import SearchResults from "@/components/SearchResults";
+import BookCarousel from "@/components/BookCarousel";
 import { Book } from "@db/schema";
 import { Card } from "@/components/ui/card";
 import { AnimatePresence, motion } from "framer-motion";
@@ -9,6 +10,14 @@ import { BookOpen, Quote, Sparkles } from "lucide-react";
 export default function Home() {
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Separate books into different categories
+  const { aiRecommendations, regularBooks } = useMemo(() => {
+    return {
+      aiRecommendations: searchResults.filter(book => book.aiRecommended),
+      regularBooks: searchResults.filter(book => !book.aiRecommended),
+    };
+  }, [searchResults]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,15 +55,46 @@ export default function Home() {
       {/* Results Section */}
       <div className="container mx-auto px-4 py-12">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={isLoading ? 'loading' : 'results'}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <SearchResults results={searchResults} isLoading={isLoading} />
-          </motion.div>
+          {isLoading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SearchResults results={[]} isLoading={true} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-12"
+            >
+              {aiRecommendations.length > 0 && (
+                <BookCarousel 
+                  books={aiRecommendations} 
+                  title="AI-Powered Recommendations" 
+                />
+              )}
+              {regularBooks.length > 0 && (
+                <BookCarousel 
+                  books={regularBooks} 
+                  title="Book Matches" 
+                />
+              )}
+              {searchResults.length === 0 && !isLoading && (
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-semibold text-muted-foreground">
+                    Start searching to discover books
+                  </h2>
+                </div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
