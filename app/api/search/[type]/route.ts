@@ -1,4 +1,5 @@
 import { searchBooksByDescription, searchBooksByQuote } from "@/lib/books";
+import { getBookRecommendations } from "@/lib/ai";
 import { db } from "@db";
 import { searchHistory } from "@db/schema";
 import { NextResponse } from "next/server";
@@ -22,11 +23,37 @@ export async function POST(
     const query = body.query.trim();
     console.log(`Performing ${params.type} search for: "${query}"`);
 
-    let results;
+    let results = [];
     try {
-      results = params.type === "quote"
-        ? await searchBooksByQuote(query)
-        : await searchBooksByDescription(query);
+      if (params.type === "description") {
+        // Get recommendations from both Google AI and Google Books
+        const [aiResults, bookResults] = await Promise.all([
+          getBookRecommendations(query),
+          searchBooksByDescription(query)
+        ]);
+
+        // Merge and deduplicate results
+        const aiTitles = new Set(aiResults.map(r => r.title.toLowerCase()));
+        const filteredBookResults = bookResults.filter(b => !aiTitles.has(b.title.toLowerCase()));
+
+        results = [
+          ...aiResults.map(r => ({
+            id: `ai-${Buffer.from(r.title).toString('base64')}`,
+            title: r.title,
+            author: r.author,
+            description: r.reason,
+            coverUrl: "/placeholder-cover.jpg", // We'll fetch this from Google Books API
+            publishedYear: "",
+            genre: "",
+            quotes: [],
+            createdAt: new Date(),
+            aiRecommended: true
+          })),
+          ...filteredBookResults
+        ];
+      } else {
+        results = await searchBooksByQuote(query);
+      }
       console.log(`Search returned ${results.length} results`);
     } catch (searchError) {
       console.error("Search failed:", searchError);

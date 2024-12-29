@@ -1,9 +1,10 @@
 import { Book } from "@db/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
 
 interface BookCardProps {
-  book: Book;
+  book: Book & { aiRecommended?: boolean };
 }
 
 export default function BookCard({ book }: BookCardProps) {
@@ -15,11 +16,19 @@ export default function BookCard({ book }: BookCardProps) {
           alt={book.title}
           className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
         />
+        {book.aiRecommended && (
+          <div className="absolute top-2 right-2">
+            <Badge variant="secondary" className="gap-1">
+              <Sparkles className="w-3 h-3" />
+              AI Recommended
+            </Badge>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pt-4">
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{book.title}</h3>
         <p className="text-muted-foreground text-sm mb-2">by {book.author}</p>
-        
+
         <div className="flex gap-2 mb-3">
           {book.genre && (
             <Badge variant="secondary" className="text-xs">
@@ -32,7 +41,7 @@ export default function BookCard({ book }: BookCardProps) {
             </Badge>
           )}
         </div>
-        
+
         <p className="text-sm text-muted-foreground line-clamp-3">
           {book.description}
         </p>
