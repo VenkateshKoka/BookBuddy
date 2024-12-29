@@ -1,10 +1,14 @@
 import { Book } from "@db/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Star } from "lucide-react";
 
 interface BookCardProps {
-  book: Book & { aiRecommended?: boolean };
+  book: Book & { 
+    aiRecommended?: boolean;
+    relevanceScore?: number;
+    matchingAspects?: string[];
+  };
 }
 
 export default function BookCard({ book }: BookCardProps) {
@@ -17,11 +21,17 @@ export default function BookCard({ book }: BookCardProps) {
           className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
         />
         {book.aiRecommended && (
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 right-2 flex flex-col gap-2">
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="w-3 h-3" />
               AI Recommended
             </Badge>
+            {book.relevanceScore && (
+              <Badge variant="default" className="gap-1">
+                <Star className="w-3 h-3 fill-current" />
+                {book.relevanceScore}% Match
+              </Badge>
+            )}
           </div>
         )}
       </CardHeader>
@@ -29,7 +39,7 @@ export default function BookCard({ book }: BookCardProps) {
         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{book.title}</h3>
         <p className="text-muted-foreground text-sm mb-2">by {book.author}</p>
 
-        <div className="flex gap-2 mb-3">
+        <div className="flex flex-wrap gap-2 mb-3">
           {book.genre && (
             <Badge variant="secondary" className="text-xs">
               {book.genre}
@@ -40,6 +50,11 @@ export default function BookCard({ book }: BookCardProps) {
               {book.publishedYear}
             </Badge>
           )}
+          {book.matchingAspects?.map((aspect, i) => (
+            <Badge key={i} variant="secondary" className="text-xs bg-primary/10 text-primary">
+              {aspect}
+            </Badge>
+          ))}
         </div>
 
         <p className="text-sm text-muted-foreground line-clamp-3">

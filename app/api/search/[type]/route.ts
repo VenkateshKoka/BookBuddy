@@ -32,7 +32,7 @@ export async function POST(
           searchBooksByDescription(query)
         ]);
 
-        // Merge and deduplicate results
+        // Merge and deduplicate results, prioritizing AI recommendations
         const aiTitles = new Set(aiResults.map(r => r.title.toLowerCase()));
         const filteredBookResults = bookResults.filter(b => !aiTitles.has(b.title.toLowerCase()));
 
@@ -42,19 +42,28 @@ export async function POST(
             title: r.title,
             author: r.author,
             description: r.reason,
-            coverUrl: "/placeholder-cover.jpg", // We'll fetch this from Google Books API
+            coverUrl: "/placeholder-cover.jpg",
             publishedYear: "",
             genre: "",
             quotes: [],
             createdAt: new Date(),
-            aiRecommended: true
+            aiRecommended: true,
+            relevanceScore: r.relevanceScore,
+            matchingAspects: r.matchingAspects
           })),
-          ...filteredBookResults
+          ...filteredBookResults.map(b => ({
+            ...b,
+            aiRecommended: false
+          }))
         ];
+
+        // Log the enhanced results
+        console.log(`Generated ${aiResults.length} AI recommendations and ${filteredBookResults.length} book results`);
       } else {
         results = await searchBooksByQuote(query);
       }
-      console.log(`Search returned ${results.length} results`);
+
+      console.log(`Search returned ${results.length} total results`);
     } catch (searchError) {
       console.error("Search failed:", searchError);
       throw searchError;
