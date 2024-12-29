@@ -4,16 +4,28 @@ const GOOGLE_BOOKS_API = "https://www.googleapis.com/books/v1/volumes";
 
 export async function searchBooksByDescription(query: string): Promise<Book[]> {
   try {
-    const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=10`
-    );
+    // Format query to improve search results
+    const formattedQuery = encodeURIComponent(`${query} subject:fiction`);
+    const url = `${GOOGLE_BOOKS_API}?q=${formattedQuery}&maxResults=10&langRestrict=en&printType=books`;
+
+    console.log("Fetching books from:", url);
+    const response = await fetch(url);
 
     if (!response.ok) {
+      const error = await response.text();
+      console.error("Google Books API error:", error);
       throw new Error(`Google Books API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.items?.map(transformGoogleBook) ?? [];
+    console.log(`Google Books API returned ${data.totalItems} total items`);
+
+    if (!data.items) {
+      console.log("No books found for query:", query);
+      return [];
+    }
+
+    return data.items.map(transformGoogleBook);
   } catch (error) {
     console.error("Failed to fetch books from Google Books API:", error);
     throw new Error("Failed to search books");
@@ -22,17 +34,28 @@ export async function searchBooksByDescription(query: string): Promise<Book[]> {
 
 export async function searchBooksByQuote(quote: string): Promise<Book[]> {
   try {
-    // Google Books API doesn't support direct quote search, so we'll search in snippets
-    const response = await fetch(
-      `${GOOGLE_BOOKS_API}?q="${encodeURIComponent(quote)}"&maxResults=5`
-    );
+    // Format quote search to be more precise
+    const formattedQuery = encodeURIComponent(`"${quote}"`);
+    const url = `${GOOGLE_BOOKS_API}?q=${formattedQuery}&maxResults=5&langRestrict=en&printType=books`;
+
+    console.log("Fetching books by quote from:", url);
+    const response = await fetch(url);
 
     if (!response.ok) {
+      const error = await response.text();
+      console.error("Google Books API error:", error);
       throw new Error(`Google Books API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.items?.map(transformGoogleBook) ?? [];
+    console.log(`Google Books API returned ${data.totalItems} total items for quote search`);
+
+    if (!data.items) {
+      console.log("No books found for quote:", quote);
+      return [];
+    }
+
+    return data.items.map(transformGoogleBook);
   } catch (error) {
     console.error("Failed to fetch books by quote from Google Books API:", error);
     throw new Error("Failed to search books by quote");
@@ -41,6 +64,9 @@ export async function searchBooksByQuote(quote: string): Promise<Book[]> {
 
 function transformGoogleBook(googleBook: any): Book {
   const volumeInfo = googleBook.volumeInfo;
+
+  // Add more detailed logging for book transformation
+  console.log("Processing book:", volumeInfo.title);
 
   return {
     id: googleBook.id,

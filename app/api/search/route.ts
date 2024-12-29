@@ -9,6 +9,7 @@ export async function POST(request: Request) {
     console.log("Search request received:", body);
 
     if (!body.query) {
+      console.log("Search rejected: Missing query");
       return NextResponse.json(
         { error: "Search query is required" },
         { status: 400 }
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
         query,
         searchType: type,
       });
+      console.log("Search history logged successfully");
     } catch (dbError) {
       console.error("Failed to log search history:", dbError);
       // Don't throw here, as the search itself succeeded
