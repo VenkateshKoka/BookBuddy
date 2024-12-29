@@ -20,14 +20,23 @@ export function registerRoutes(app: Express): Server {
       // Get recommendations from both Google AI and Google Books
       console.log("Starting parallel AI and Books API requests");
       const [aiResults, bookResults] = await Promise.all([
-        getBookRecommendations(query),
+        getBookRecommendations(query).catch(err => {
+          console.error("AI recommendations failed:", err);
+          return []; // Fallback to empty array on error
+        }),
         searchBooksByDescription(query)
       ]);
 
       console.log("AI Results:", aiResults);
       console.log("Book Results:", bookResults);
 
-      // Merge and deduplicate results
+      // If we have no results from either source, return an empty array
+      if (!aiResults.length && !bookResults.length) {
+        console.log("No results found from either source");
+        return res.json([]);
+      }
+
+      // Merge and deduplicate results, prioritizing AI recommendations
       const aiTitles = new Set(aiResults.map(r => r.title.toLowerCase()));
       const filteredBookResults = bookResults.filter(b => !aiTitles.has(b.title.toLowerCase()));
 
@@ -53,16 +62,24 @@ export function registerRoutes(app: Express): Server {
       ];
 
       // Log search in history
-      await db.insert(searchHistory).values({
-        query,
-        searchType: "description",
-      });
+      try {
+        await db.insert(searchHistory).values({
+          query,
+          searchType: "description",
+        });
+        console.log("Search history logged successfully");
+      } catch (dbError) {
+        console.error("Failed to log search history:", dbError);
+        // Don't throw here, as the search itself succeeded
+      }
 
       console.log(`Sending ${results.length} results back to client`);
       res.json(results);
     } catch (error) {
       console.error("Search endpoint error:", error);
-      res.status(500).json({ error: "Failed to search books" });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to search books" 
+      });
     }
   });
 
@@ -79,15 +96,23 @@ export function registerRoutes(app: Express): Server {
       const results = await searchBooksByQuote(quote);
 
       // Log search in history
-      await db.insert(searchHistory).values({
-        query: quote,
-        searchType: "quote",
-      });
+      try {
+        await db.insert(searchHistory).values({
+          query: quote,
+          searchType: "quote",
+        });
+        console.log("Search history logged successfully");
+      } catch (dbError) {
+        console.error("Failed to log search history:", dbError);
+        // Don't throw here, as the search itself succeeded
+      }
 
       res.json(results);
     } catch (error) {
       console.error("Quote search failed:", error);
-      res.status(500).json({ error: "Failed to search quotes" });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to search quotes" 
+      });
     }
   });
 
