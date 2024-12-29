@@ -7,18 +7,43 @@ import { searchHistory } from "@db/schema";
 import { desc } from "drizzle-orm";
 
 export function registerRoutes(app: Express): Server {
-  // Search books by description
-  app.post("/api/search/description", async (req, res) => {
+  // Unified search endpoint for both quotes and descriptions
+  app.post("/api/search", async (req, res) => {
     try {
-      console.log("Description search request received:", req.body);
+      console.log("Search request received:", req.body);
       const { query } = req.body;
 
       if (!query) {
         return res.status(400).json({ error: "Search query is required" });
       }
 
+      console.log("Starting parallel search requests");
+
+      // First, try to find exact quote matches
+      const quoteResults = await searchBooksByQuote(query);
+
+      // If we find exact quote matches, prioritize those
+      if (quoteResults.length > 0) {
+        console.log(`Found ${quoteResults.length} quote matches`);
+
+        // Log search in history
+        try {
+          await db.insert(searchHistory).values({
+            query,
+            searchType: "quote",
+          });
+          console.log("Search history logged successfully");
+        } catch (dbError) {
+          console.error("Failed to log search history:", dbError);
+        }
+
+        return res.json(quoteResults);
+      }
+
+      // If no quote matches, treat as a description search
+      console.log("No quote matches found, searching by description");
+
       // Get recommendations from both Google AI and Google Books
-      console.log("Starting parallel AI and Books API requests");
       const [aiResults, bookResults] = await Promise.all([
         getBookRecommendations(query).catch(err => {
           console.error("AI recommendations failed:", err);
@@ -70,7 +95,6 @@ export function registerRoutes(app: Express): Server {
         console.log("Search history logged successfully");
       } catch (dbError) {
         console.error("Failed to log search history:", dbError);
-        // Don't throw here, as the search itself succeeded
       }
 
       console.log(`Sending ${results.length} results back to client`);
@@ -79,39 +103,6 @@ export function registerRoutes(app: Express): Server {
       console.error("Search endpoint error:", error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to search books" 
-      });
-    }
-  });
-
-  // Search books by quote
-  app.post("/api/search/quote", async (req, res) => {
-    try {
-      console.log("Quote search request received:", req.body);
-      const { quote } = req.body;
-
-      if (!quote) {
-        return res.status(400).json({ error: "Quote is required" });
-      }
-
-      const results = await searchBooksByQuote(quote);
-
-      // Log search in history
-      try {
-        await db.insert(searchHistory).values({
-          query: quote,
-          searchType: "quote",
-        });
-        console.log("Search history logged successfully");
-      } catch (dbError) {
-        console.error("Failed to log search history:", dbError);
-        // Don't throw here, as the search itself succeeded
-      }
-
-      res.json(results);
-    } catch (error) {
-      console.error("Quote search failed:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to search quotes" 
       });
     }
   });

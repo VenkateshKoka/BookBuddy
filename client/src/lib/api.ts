@@ -1,7 +1,7 @@
 import { Book } from "@db/schema";
 
 export async function searchBooks(query: string): Promise<Book[]> {
-  const response = await fetch("/api/search/description", {
+  const response = await fetch("/api/search", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
