@@ -22,6 +22,7 @@ interface SearchBoxProps {
 export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
   const [searchType, setSearchType] = useState<"description" | "quote">("description");
   const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = async () => {
@@ -34,7 +35,9 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
       return;
     }
 
+    setIsLoading(true);
     onSearchStart();
+
     try {
       console.log(`Starting ${searchType} search for: "${trimmedQuery}"`);
 
@@ -62,6 +65,8 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
         variant: "destructive",
       });
       onSearch([]); // Clear results on error
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,6 +76,7 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
         <Select
           value={searchType}
           onValueChange={(value: "description" | "quote") => setSearchType(value)}
+          disabled={isLoading}
         >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Search type" />
@@ -92,7 +98,8 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pr-10"
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && !isLoading && handleSearch()}
+            disabled={isLoading}
           />
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
         </div>
@@ -101,8 +108,16 @@ export default function SearchBox({ onSearch, onSearchStart }: SearchBoxProps) {
       <Button
         onClick={handleSearch}
         className="w-full bg-primary hover:bg-primary/90"
+        disabled={isLoading}
       >
-        Search Books
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            Searching...
+          </div>
+        ) : (
+          "Search Books"
+        )}
       </Button>
     </div>
   );
