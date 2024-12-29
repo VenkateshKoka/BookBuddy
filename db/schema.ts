@@ -1,9 +1,9 @@
-import { pgTable, text, serial, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
 export const books = pgTable("books", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(), // Google Books ID
   title: text("title").notNull(),
   author: text("author").notNull(),
   description: text("description").notNull(),
@@ -22,11 +22,11 @@ export const searchHistory = pgTable("search_history", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
-// Create indices using raw SQL for better control
+// Create indices for better search performance
 export const createIndices = sql`
-  CREATE INDEX IF NOT EXISTS title_idx ON books USING GIN (to_tsvector('english', title));
-  CREATE INDEX IF NOT EXISTS description_idx ON books USING GIN (to_tsvector('english', description));
-  CREATE INDEX IF NOT EXISTS author_idx ON books USING GIN (to_tsvector('english', author));
+  CREATE INDEX IF NOT EXISTS books_title_idx ON books USING GIN (to_tsvector('english', title));
+  CREATE INDEX IF NOT EXISTS books_description_idx ON books USING GIN (to_tsvector('english', description));
+  CREATE INDEX IF NOT EXISTS books_author_idx ON books USING GIN (to_tsvector('english', author));
 `;
 
 export const insertBookSchema = createInsertSchema(books);
