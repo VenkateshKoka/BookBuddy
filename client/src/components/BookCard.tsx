@@ -2,6 +2,7 @@ import { Book } from "@db/schema";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Star } from "lucide-react";
+import { Sparkles as SparkleEffect } from "@/components/ui/sparkle";
 
 interface BookCardProps {
   book: Book & { 
@@ -13,7 +14,10 @@ interface BookCardProps {
 
 export default function BookCard({ book }: BookCardProps) {
   return (
-    <Card className="h-full hover:shadow-lg transition-shadow">
+    <Card className="h-full hover:shadow-lg transition-shadow relative overflow-hidden">
+      {book.aiRecommended && (
+        <SparkleEffect className="z-10" />
+      )}
       <CardHeader className="relative h-48">
         <img
           src={book.coverUrl}
@@ -21,13 +25,13 @@ export default function BookCard({ book }: BookCardProps) {
           className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
         />
         {book.aiRecommended && (
-          <div className="absolute top-2 right-2 flex flex-col gap-2">
-            <Badge variant="secondary" className="gap-1">
+          <div className="absolute top-2 right-2 flex flex-col gap-2 z-20">
+            <Badge variant="secondary" className="gap-1 bg-background/80 backdrop-blur-sm">
               <Sparkles className="w-3 h-3" />
               AI Recommended
             </Badge>
             {book.relevanceScore && (
-              <Badge variant="default" className="gap-1">
+              <Badge variant="default" className="gap-1 bg-primary/80 backdrop-blur-sm">
                 <Star className="w-3 h-3 fill-current" />
                 {book.relevanceScore}% Match
               </Badge>
