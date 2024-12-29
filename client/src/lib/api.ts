@@ -10,10 +10,14 @@ export async function searchBooks(query: string): Promise<Book[]> {
   });
 
   if (!response.ok) {
+    const errorData = await response.text();
+    console.error("Search failed:", errorData);
     throw new Error("Failed to search books");
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log("Search results:", data);
+  return data;
 }
 
 export async function searchByQuote(quote: string): Promise<Book[]> {
@@ -26,8 +30,12 @@ export async function searchByQuote(quote: string): Promise<Book[]> {
   });
 
   if (!response.ok) {
+    const errorData = await response.text();
+    console.error("Quote search failed:", errorData);
     throw new Error("Failed to search by quote");
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log("Quote search results:", data);
+  return data;
 }

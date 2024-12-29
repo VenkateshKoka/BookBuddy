@@ -27,10 +27,14 @@ export async function POST(
     try {
       if (params.type === "description") {
         // Get recommendations from both Google AI and Google Books
+        console.log("Starting parallel AI and Books API requests");
         const [aiResults, bookResults] = await Promise.all([
           getBookRecommendations(query),
           searchBooksByDescription(query)
         ]);
+
+        console.log("AI Results:", aiResults);
+        console.log("Book Results:", bookResults);
 
         // Merge and deduplicate results, prioritizing AI recommendations
         const aiTitles = new Set(aiResults.map(r => r.title.toLowerCase()));
@@ -57,13 +61,12 @@ export async function POST(
           }))
         ];
 
-        // Log the enhanced results
         console.log(`Generated ${aiResults.length} AI recommendations and ${filteredBookResults.length} book results`);
       } else {
         results = await searchBooksByQuote(query);
       }
 
-      console.log(`Search returned ${results.length} total results`);
+      console.log(`Search returned ${results.length} total results:`, results);
     } catch (searchError) {
       console.error("Search failed:", searchError);
       throw searchError;
